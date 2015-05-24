@@ -4,6 +4,9 @@ import pylab as plt
 
 from astrometry.util.plotutils import *
 
+# Global
+colors = 'brgmck'
+        
 def example1d():
     means = [ 4  , 8   ]
     stds  = [ 1.5, 1   ]
@@ -53,14 +56,27 @@ def example2d():
         plt.savefig('ex2%s.pdf' % plotname)
 
 
-def sample_clusters(amps, means, stds, N=100, D=2):
+def sample_clusters(amps, means, stds, N=100, D=2, bounds=None):
     K = len(amps)
     amps = np.array(amps)
     amps /= np.sum(amps)
     nk = np.random.multinomial(N, amps)
     x = []
+    trueclass = []
     for n,mean,std in zip(nk, means, stds):
-        x.append(np.random.normal(loc=mean, scale=std, size=(n,D)))
+        xi = np.random.normal(loc=mean, scale=std, size=(n,D))
+        if bounds is not None:
+            outofbounds = np.empty(len(xi), bool)
+            while True:
+                outofbounds[:] = False
+                for d,(lo,hi) in enumerate(bounds):
+                    outofbounds |= np.logical_or(xi[:,d] < lo, xi[:,d] > hi)
+                if not np.any(outofbounds):
+                    break
+                xi[outofbounds,:] = np.random.normal(
+                    loc=mean, scale=std, size=(np.sum(outofbounds),D))
+            
+        x.append(xi)
     print [xi.shape for xi in x]
     return x
 
@@ -68,13 +84,13 @@ def get_clusterA():
     means = [ (3.5,2.5)  , (7.5,3.5), (4.5,6.5) ]
     stds  = [ 1.,  0.7, 0.7   ]
     amps  = [ 0.5, 0.25, 0.25 ]
-    return amps, means, stds
+    ax = [0, 10, 0, 8.5]
+    return (amps, means, stds), ax
 
 def example3():
-    C = get_clusterA()
+    C,ax = get_clusterA()
     x = sample_clusters(*C, N=200)
     
-    ax = [-1, 11, -1, 9]
     for colors,plotname in [('kkk','a'), ('brg','b')]:
         plt.clf()
         for xi,cc in zip(x, colors):
@@ -124,22 +140,18 @@ def voronoi_plot_2d(vor, ax=None):
                     [vor.vertices[i,1], far_point[1]], 'k--')
 
 
-def kmeans(ps, seed=None):
-    C = get_clusterA()
-    N = 200
-    #N = 8
-    X = sample_clusters(*C, N=N)
+def kmeans(ps, seed=None, getcluster=get_clusterA, K=3, N=200,
+           plotTruth=False, plotsymbol='.'):
+    C,ax = getcluster()
+    X = sample_clusters(*C, N=N, bounds=np.array(ax).reshape(2,2))
+    xi = X
     X = np.vstack(X)
     print X.shape
-
-    K = 3
 
     if seed is not None:
         np.random.seed(seed)
     centroids = X[np.random.permutation(N)[:K],:]
     print 'centroids', centroids
-
-    ax = [0, 10, 0, 8.5]
 
     while True:
         # compute nearest centroid for data points
@@ -150,17 +162,30 @@ def kmeans(ps, seed=None):
         print 'nearest', nearest.shape, np.unique(nearest)
         #print nearest
         
-        colors = 'brgmck'
         plt.clf()
         for i,c in enumerate(centroids):
             plt.plot(c[0], c[1], 'x', mew=2, ms=15, color=colors[i])
         for i,c in enumerate(centroids):
             I = np.flatnonzero(nearest == i)
-            plt.plot(X[I,0], X[I,1], '.', mfc=colors[i], mec='k')
+            plt.plot(X[I,0], X[I,1], plotsymbol, mfc=colors[i], mec='k')
 
-        from scipy.spatial import Voronoi #, voronoi_plot_2d
-        vor = Voronoi(centroids)
-        voronoi_plot_2d(vor, plt.gca())
+
+        vor = None
+        if K > 2:
+            from scipy.spatial import Voronoi #, voronoi_plot_2d
+            vor = Voronoi(centroids)
+            voronoi_plot_2d(vor, plt.gca())
+        else:
+            mid = np.mean(centroids, axis=0)
+            x0,y0 = centroids[0]
+            x1,y1 = centroids[1]
+            slope = (y1-y0)/(x1-x0)
+            slope = -1./slope
+            run = 1000.
+            plt.plot([mid[0] - run, mid[0] + run],
+                     [mid[1] - run*slope, mid[1] + run*slope], 'k--')
+                     
+
         plt.axis(ax)
         plt.xticks([]); plt.yticks([])
         ps.savefig()
@@ -177,8 +202,13 @@ def kmeans(ps, seed=None):
             plt.plot(nc[0], nc[1], 'x', mew=2, ms=15, color=colors[i])
         for i,c in enumerate(centroids):
             I = np.flatnonzero(nearest == i)
-            plt.plot(X[I,0], X[I,1], '.', mfc=colors[i], mec='k')
-        voronoi_plot_2d(vor, plt.gca())
+            plt.plot(X[I,0], X[I,1], plotsymbol, mfc=colors[i], mec='k')
+
+        if vor is not None:
+            voronoi_plot_2d(vor, plt.gca())
+        else:
+            plt.plot([mid[0] - run, mid[0] + run],
+                     [mid[1] - run*slope, mid[1] + run*slope], 'k--')
         plt.axis(ax)
         plt.xticks([]); plt.yticks([])
         ps.savefig()
@@ -192,6 +222,42 @@ def kmeans(ps, seed=None):
         
         centroids = newcentroids
 
+    if plotTruth:
+        plt.clf()
+        for i,x in enumerate(xi):
+            plt.plot(x[:,0], x[:,1], plotsymbol, mfc=colors[i], mec='k')
+        plt.axis(ax)
+        plt.xticks([]); plt.yticks([])
+        ps.savefig()
+        
+
+def get_clusterB():
+    means = [ (5., 4.), (5., 4.) ]
+    stds  = [ 4., 0.2  ]
+    amps  = [ 0.8, 0.2 ]
+    ax = [0, 10, 0, 8]
+    return (amps, means, stds), ax
+
+        
+def kmeans_break1():
+    seed = 42
+    ps = PlotSequence('break1', suffix='pdf')
+
+    np.random.seed(seed)
+    kmeans(ps, seed=None, getcluster=get_clusterB, K=2, plotTruth=True,
+           plotsymbol='o')
+
+    # C,ax = get_clusterB()
+    # np.random.seed(seed)
+    # N = 200
+    # X = sample_clusters(*C, N=N, bounds=np.array(ax).reshape(2,2))
+    # 
+    # plt.clf()
+    # for i,xi in enumerate(X):
+    #     plt.plot(xi[:,0], xi[:,1], '.', 
+
+    
+        
 
 plt.figure(figsize=(4,3))
 plt.subplots_adjust(left=0.1, right=0.98, bottom=0.1, top=0.95)
@@ -201,11 +267,16 @@ plt.subplots_adjust(left=0.1, right=0.98, bottom=0.1, top=0.95)
 #example2d()
 #example3()
 
-ps = PlotSequence('kmeans', suffix='png')
-np.random.seed(42)    
-kmeans(ps)
+# ps = PlotSequence('kmeans', suffix='png')
+# np.random.seed(42)    
+# kmeans(ps)
+# 
+# ps = PlotSequence('kmeans2', suffix='png')
+# np.random.seed(42)    
+# kmeans(ps, seed=9)
+# os.system('avconv -r 4 -y -i kmeans2-%02d.png kmeans2.mov')
 
-ps = PlotSequence('kmeans2', suffix='png')
-np.random.seed(42)    
-kmeans(ps, seed=9)
-os.system('avconv -r 4 -y -i kmeans2-%02d.png kmeans2.mov')
+plt.subplots_adjust(left=0.01, right=0.99, bottom=0.01, top=0.99)
+kmeans_break1()
+
+
