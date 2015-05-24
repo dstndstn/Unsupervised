@@ -1,0 +1,71 @@
+\documentclass[compress,t]{beamer}
+\newcommand{\thou}{,\!000}
+\input{header}
+\usefonttheme[onlymath]{serif}
+\usepackage{multimedia} 
+
+\title{Unsupervised learning \& Mixture models}
+\author{Dustin Lang \\ {\small McWilliams Postdoc Fellow \\ Carnegie Mellon University \\ \emph{visiting} University of Waterloo}}
+\date{Local Group Astrostats \hspace*{0.5em}/\hspace*{0.5em} 2015-06-04}
+
+\begin{document}
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\section{Intro}
+
+\begin{frame}{The Machine Learning Landscape}%[plain]
+\includegraphics[width=\textwidth]{landscape}
+\end{frame}
+
+\begin{frame}{Unsupervised learning}
+  \begin{itemize}
+    \item \alert{No labels} / \alert{no truth}: We are not given a target value we want to reconstruct
+    \item Just given the data (usually assumed: low-dimensional measurements
+      with equal noise)
+    \item Main task: \alert{Clustering}
+  \end{itemize}
+
+  \includegraphics[width=0.4\textwidth]{ex3a}
+  \hspace{1em}
+  \raisebox{0.18\textheight}{$\longrightarrow$}
+  \hspace{1em}
+  \includegraphics[width=0.4\textwidth]{ex3b}
+
+\end{frame}
+
+\section{K-means}
+
+\begin{frame}{Clustering: $K$-means algorithm}
+  \begin{itemize}
+    \item Assume $K$ \alert{clusters}, each characterized by a \alert{centroid}
+    \item Start by randomly choosing $K$ data points as centroids
+    \item Iteratively:
+      \begin{itemize}
+      \item \alert{Assign} each data point to the \alert{nearest} cluster
+      \item \alert{Compute} new cluster center based on assigned data points
+      \end{itemize}
+  \end{itemize}
+  \begin{center}
+    \only<1>{\includegraphics[width=0.7\textwidth]{kmeans-00}}%
+    \only<2>{\includegraphics[width=0.7\textwidth]{kmeans-01}}%
+    \only<3>{\includegraphics[width=0.7\textwidth]{kmeans-02}}%
+    \only<4>{\includegraphics[width=0.7\textwidth]{kmeans-03}}%
+    \only<5>{\includegraphics[width=0.7\textwidth]{kmeans-04}}%
+    \only<6>{\includegraphics[width=0.7\textwidth]{kmeans-05}}%
+    \only<7>{\includegraphics[width=0.7\textwidth]{kmeans-06}}%
+    \only<8>{\includegraphics[width=0.7\textwidth]{kmeans-07}}%
+    \only<9>{\includegraphics[width=0.7\textwidth]{kmeans-08}}%
+    \only<10>{\includegraphics[width=0.7\textwidth]{kmeans-09}}%
+    \only<11>{\includegraphics[width=0.7\textwidth]{kmeans-10}}%
+  \end{center}
+\end{frame}
+
+%\begin{frame}{Clustering: $K$-means algorithm}
+%\end{frame}
+
+
+\end{document}
+
