@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pylab as plt
 
@@ -102,8 +103,9 @@ def distance_matrix_2d(A, B):
     return dists
 
 def voronoi_plot_2d(vor, ax=None):
-    ptp_bound = vor.points.ptp(axis=0)
-
+    #ptp_bound = vor.points.ptp(axis=0)
+    ptp_bound = np.array([1000,1000])
+    
     center = vor.points.mean(axis=0)
     for pointidx, simplex in zip(vor.ridge_points, vor.ridge_vertices):
         simplex = np.asarray(simplex)
@@ -122,7 +124,7 @@ def voronoi_plot_2d(vor, ax=None):
                     [vor.vertices[i,1], far_point[1]], 'k--')
 
 
-def kmeans():
+def kmeans(ps, seed=None):
     C = get_clusterA()
     N = 200
     #N = 8
@@ -130,9 +132,10 @@ def kmeans():
     X = np.vstack(X)
     print X.shape
 
-    ps = PlotSequence('kmeans', suffix='pdf')
-    
     K = 3
+
+    if seed is not None:
+        np.random.seed(seed)
     centroids = X[np.random.permutation(N)[:K],:]
     print 'centroids', centroids
 
@@ -193,9 +196,16 @@ def kmeans():
 plt.figure(figsize=(4,3))
 plt.subplots_adjust(left=0.1, right=0.98, bottom=0.1, top=0.95)
     
-np.random.seed(42)    
+#np.random.seed(42)    
 #example1d()
 #example2d()
 #example3()
-#np.random.seed(42)    
-kmeans()   
+
+ps = PlotSequence('kmeans', suffix='png')
+np.random.seed(42)    
+kmeans(ps)
+
+ps = PlotSequence('kmeans2', suffix='png')
+np.random.seed(42)    
+kmeans(ps, seed=9)
+os.system('avconv -r 4 -y -i kmeans2-%02d.png kmeans2.mov')
