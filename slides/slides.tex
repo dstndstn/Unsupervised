@@ -3,6 +3,8 @@
 \input{header}
 \usefonttheme[onlymath]{serif}
 \usepackage{multimedia} 
+\usepackage{amsmath}
+\graphicspath{{figs/}}
 
 \title{Unsupervised learning \& Mixture models}
 \author{Dustin Lang \\ {\small McWilliams Postdoc Fellow \\ Carnegie Mellon University \\ \emph{visiting} University of Waterloo}}
@@ -67,14 +69,109 @@
   \movie[showcontrols,once]{\includegraphics[width=\textwidth]{kmeans2-00}}{kmeans2.mov}
 \end{frame}
 
-\begin{frame}{Breaking $K$-means}
-  Clusters are defined by \alert{centroids alone} $\longrightarrow$
-  Clusters split by hyper-planes
+% \begin{frame}{Breaking $K$-means}
+%   Clusters are defined by \alert{centroids alone} $\longrightarrow$
+%   Clusters split by hyper-planes
+%   \begin{center}
+%     \includegraphics[width=0.49\textwidth]{break1-12}
+%     \includegraphics[width=0.49\textwidth]{break1-11}
+%   \end{center}
+% \end{frame}
+
+\begin{frame}{Problems with $K$-means}
+  Clusters are defined by \alert{centroids alone}
+  \begin{itemize}
+    \item clusters are separated by hyper-planes
+    \item no covariances in the clusters
+    \item no weights for clusters
+    \item data points are hard-assigned to clusters
+    \item noisy measurements not considered
+    \item local optimization (multiple random initializations)
+  \end{itemize}
   \begin{center}
     \includegraphics[width=0.49\textwidth]{break1-12}
     \includegraphics[width=0.49\textwidth]{break1-11}
   \end{center}
 \end{frame}
+
+
+
+\begin{frame}{Gaussian Mixture Models}
+  \begin{itemize}
+  \item Instead of finding just \alert{centroids}, we want to find
+    \alert{weights} and Gaussians \alert{means} and
+    \alert{covariances} of clusters
+    %
+  \item Can be optimized efficiently using the
+    \alert{Expectation-Maximization} (EM) algorithm
+  \end{itemize}
+
+  \begin{center}
+    \only<1>{\includegraphics[width=0.66\textwidth]{gmm-00}}%
+    \only<2>{\includegraphics[width=0.66\textwidth]{gmm-01}}%
+    \only<3>{\includegraphics[width=0.66\textwidth]{gmm-02}}%
+    \only<4>{\includegraphics[width=0.66\textwidth]{gmm-03}}%
+    \only<5>{\includegraphics[width=0.66\textwidth]{gmm-04}}%
+    \only<6>{\includegraphics[width=0.66\textwidth]{gmm-05}}%
+    \only<7>{\includegraphics[width=0.66\textwidth]{gmm-06}}%
+    \only<8>{\includegraphics[width=0.66\textwidth]{gmm-07}}%
+    \only<9>{\includegraphics[width=0.66\textwidth]{gmm-08}}%
+    \only<10>{\includegraphics[width=0.66\textwidth]{gmm-09}}%
+    \only<11>{\includegraphics[width=0.66\textwidth]{gmm-10}}%
+    \only<12>{\includegraphics[width=0.66\textwidth]{gmm-11}}%
+    \only<13>{\includegraphics[width=0.66\textwidth]{gmm-12}}%
+    \only<14>{\includegraphics[width=0.66\textwidth]{gmm-13}}%
+    \only<15>{\includegraphics[width=0.66\textwidth]{gmm-14}}%
+    \only<16>{\includegraphics[width=0.66\textwidth]{gmm-15}}%
+    \only<17>{\includegraphics[width=0.66\textwidth]{gmm-16}}%
+    \only<18>{\includegraphics[width=0.66\textwidth]{gmm-17}}%
+    \only<19>{\includegraphics[width=0.66\textwidth]{gmm-18}}%
+    \only<20>{\includegraphics[width=0.66\textwidth]{gmm-19}}%
+    \only<21>{\includegraphics[width=0.66\textwidth]{gmm-24}}%
+  \end{center}
+\end{frame}
+
+\begin{frame}{Gaussian Mixture Models / Expectation-Maximization}
+  E-M proceeds by:
+  \begin{itemize}
+  \item \alert{E}: compute probability of drawing each \alert{data
+    point} $i$ from each \alert{cluster} or \alert{component} $k$:
+    \[
+    z_{i,k} = a_k \, \mathcal{N}(x_i \,|\, \mu_k, \Sigma_k)
+    \]
+  where $a_k$ is the cluster \alert{weight}, and $\mu_k$,$\Sigma_k$
+  are its mean and covariance.
+    %
+  \item \alert{M}: compute new component weights and parameters,
+    weighting by \emph{relative} component-weights
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Gaussian Mixture Models / Expectation-Maximization}
+  \begin{itemize}
+    \item E-M ``update equations'' (M step) for Gaussian mixtures:
+      \begin{align}
+        z'_{i,k} &= \frac{z_{i,k}}{\sum_k z_{i,k}} \\
+        a'_k &= \sum_k z'_{i,k} \\
+        \mu'_{i,k} &= \frac{1}{a'_k} \, z'_{i,k} x_i \\
+        \Sigma'_{i,k} &= \frac{1}{a'_k} \, z'_{i,k} (x_i - \mu_k) (x_i - \mu_k)^T
+      \end{align}
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}{Mixture Models / Foreground-Background Models}
+  \begin{itemize}
+    \item Often, \alert{junk} or \alert{interlopers} can get into your
+      sample (of galaxies, stars, etc)
+    \item If not dealt with, can strongly skew results (outliers)
+    \item \alert{Model} the objects you don't care about (background)
+      \alert{as well as} the ones you do care about (foreground)
+    \item Background model can be a regular Gaussian component, or a
+      flat (uniform) probability distribution
+  \end{itemize}
+\end{frame}
+
 
 \end{document}
 
