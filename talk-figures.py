@@ -6,6 +6,8 @@ from astrometry.util.plotutils import *
 
 from utils import *
 
+# Github's PDF renderer doesn't seem to like PDF figures!
+plotformat = 'png'
         
 def example1d():
     means = [ 4  , 8   ]
@@ -76,7 +78,7 @@ def example3():
         plt.xlabel('Measurement A')
         plt.ylabel('Measurement B')
         #plt.axis('equal')
-        plt.savefig('ex3%s.pdf' % plotname)
+        plt.savefig('ex3%s.%s' % (plotname, plotformat))
 
 
 
@@ -189,7 +191,7 @@ def get_clusters_B():
         
 def kmeans_break1():
     seed = 42
-    ps = PlotSequence('break1', suffix='pdf')
+    ps = PlotSequence('break1', suffix=plotformat)
 
     np.random.seed(seed)
     kmeans(ps, seed=None, getcluster=get_clusters_B, K=2, plotTruth=True,
@@ -256,7 +258,7 @@ def gmm1():
     N = 1000
     X = sample_gmm(amps, means, covs, N=N)
 
-    ps = PlotSequence('gmm', suffix='pdf')
+    ps = PlotSequence('gmm', suffix=plotformat)
 
     order = [1,0]
     
@@ -352,10 +354,12 @@ def gmm1():
 plt.figure(figsize=(4,3))
 plt.subplots_adjust(left=0.1, right=0.98, bottom=0.1, top=0.95)
     
-#np.random.seed(42)    
+np.random.seed(42)    
 #example1d()
 #example2d()
-#example3()
+example3()
+
+sys.exit(0)
 
 # ps = PlotSequence('kmeans', suffix='png')
 # np.random.seed(42)    
@@ -367,10 +371,10 @@ plt.subplots_adjust(left=0.1, right=0.98, bottom=0.1, top=0.95)
 # os.system('avconv -r 4 -y -i kmeans2-%02d.png kmeans2.mov')
 
 plt.subplots_adjust(left=0.01, right=0.99, bottom=0.01, top=0.99)
-#kmeans_break1()
+np.random.seed(42)    
+kmeans_break1()
 #kmeans_break2()
 
 np.random.seed(42)    
-
 gmm1()
 
