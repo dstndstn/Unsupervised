@@ -359,11 +359,12 @@ np.random.seed(42)
 #example2d()
 example3()
 
+ps = PlotSequence('kmeans', suffix=plotformat)
+np.random.seed(42)    
+kmeans(ps)
+
 sys.exit(0)
 
-# ps = PlotSequence('kmeans', suffix='png')
-# np.random.seed(42)    
-# kmeans(ps)
 # 
 # ps = PlotSequence('kmeans2', suffix='png')
 # np.random.seed(42)    
