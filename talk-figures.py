@@ -4,8 +4,8 @@ import pylab as plt
 
 from astrometry.util.plotutils import *
 
-# Global
-colors = 'brgmck'
+from utils import *
+
         
 def example1d():
     means = [ 4  , 8   ]
@@ -56,39 +56,8 @@ def example2d():
         plt.savefig('ex2%s.pdf' % plotname)
 
 
-def sample_clusters(amps, means, stds, N=100, D=2, bounds=None):
-    K = len(amps)
-    amps = np.array(amps)
-    amps /= np.sum(amps)
-    nk = np.random.multinomial(N, amps)
-    x = []
-    trueclass = []
-    for n,mean,std in zip(nk, means, stds):
-        xi = np.random.normal(loc=mean, scale=std, size=(n,D))
-        if bounds is not None:
-            outofbounds = np.empty(len(xi), bool)
-            while True:
-                outofbounds[:] = False
-                for d,(lo,hi) in enumerate(bounds):
-                    outofbounds |= np.logical_or(xi[:,d] < lo, xi[:,d] > hi)
-                if not np.any(outofbounds):
-                    break
-                xi[outofbounds,:] = np.random.normal(
-                    loc=mean, scale=std, size=(np.sum(outofbounds),D))
-            
-        x.append(xi)
-    print [xi.shape for xi in x]
-    return x
-
-def get_clusterA():
-    means = [ (3.5,2.5)  , (7.5,3.5), (4.5,6.5) ]
-    stds  = [ 1.,  0.7, 0.7   ]
-    amps  = [ 0.5, 0.25, 0.25 ]
-    ax = [0, 10, 0, 8.5]
-    return (amps, means, stds), ax
-
 def example3():
-    C,ax = get_clusterA()
+    C,ax = get_clusters_A()
     x = sample_clusters(*C, N=200)
     
     for colors,plotname in [('kkk','a'), ('brg','b')]:
@@ -108,15 +77,6 @@ def example3():
         plt.ylabel('Measurement B')
         #plt.axis('equal')
         plt.savefig('ex3%s.pdf' % plotname)
-
-def distance_matrix_2d(A, B):
-    Na,D = A.shape
-    Nb,Db = B.shape
-    assert(Db == D)
-    dists = np.zeros((Na,Nb))
-    for a in range(Na):
-        dists[a,:] = np.sqrt(np.sum((A[a] - B)**2, axis=1))
-    return dists
 
 def voronoi_plot_2d(vor, ax=None):
     #ptp_bound = vor.points.ptp(axis=0)
@@ -140,7 +100,7 @@ def voronoi_plot_2d(vor, ax=None):
                     [vor.vertices[i,1], far_point[1]], 'k--')
 
 
-def kmeans(ps, seed=None, getcluster=get_clusterA, K=3, N=200,
+def kmeans(ps, seed=None, getcluster=get_clusters_A, K=3, N=200,
            plotTruth=False, truthOrder=None, plotsymbol='.'):
     C,ax = getcluster()
     X = sample_clusters(*C, N=N, bounds=np.array(ax).reshape(2,2))
@@ -155,7 +115,7 @@ def kmeans(ps, seed=None, getcluster=get_clusterA, K=3, N=200,
 
     while True:
         # compute nearest centroid for data points
-        dists = distance_matrix_2d(centroids, X)
+        dists = distance_matrix(centroids, X)
         print 'dists', dists.shape
         #print 'dists', dists
         nearest = np.argmin(dists, axis=0)
@@ -239,7 +199,7 @@ def kmeans(ps, seed=None, getcluster=get_clusterA, K=3, N=200,
         ps.savefig()
         
 
-def get_clusterB():
+def get_clusters_B():
     means = [ (5., 4.), (5., 4.) ]
     stds  = [ 4., 0.2  ]
     amps  = [ 0.8, 0.2 ]
@@ -252,7 +212,7 @@ def kmeans_break1():
     ps = PlotSequence('break1', suffix='pdf')
 
     np.random.seed(seed)
-    kmeans(ps, seed=None, getcluster=get_clusterB, K=2, plotTruth=True,
+    kmeans(ps, seed=None, getcluster=get_clusters_B, K=2, plotTruth=True,
            plotsymbol='o')
 
     # C,ax = get_clusterB()
@@ -264,7 +224,7 @@ def kmeans_break1():
     # for i,xi in enumerate(X):
     #     plt.plot(xi[:,0], xi[:,1], '.', 
 
-def get_clusterC():
+def get_clusters_C():
     means = [ (3.5, 4.), (6.5, 4.) ]
     stds  = [ 0.8, 0.5  ]
     amps  = [ 0.9, 0.1 ]
@@ -275,7 +235,7 @@ def kmeans_break2():
     ps = PlotSequence('break2', suffix='png')
 
     np.random.seed(42)    
-    kmeans(ps, seed=None, getcluster=get_clusterC, K=2, plotTruth=True,
+    kmeans(ps, seed=None, getcluster=get_clusters_C, K=2, plotTruth=True,
            plotsymbol='o', truthOrder=[1,0], N=500)
 
 def sample_gmm(amps, means, covs, N=100, D=2, bounds=None):
