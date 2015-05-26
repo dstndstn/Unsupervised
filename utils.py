@@ -22,9 +22,19 @@ def sample_clusters(amps, means, varis, N=100, D=2, bounds=None):
     amps /= np.sum(amps)
     nk = np.random.multinomial(N, amps)
     x = []
-    trueclass = []
+
+    def _sample_gaussian(mean, var, N, D):
+        if np.isscalar(var):
+            # Assume isotropic
+            return np.random.normal(loc=mean, scale=np.sqrt(var), size=(N,D))
+        # Assume covariance matrix
+        var = np.array(var)
+        u,s,v = np.linalg.svd(var)
+        x = np.random.normal(size=(N,D))
+        return mean + np.dot(u, (x * s).T).T
+        
     for n,mean,var in zip(nk, means, varis):
-        xi = np.random.normal(loc=mean, scale=np.sqrt(var), size=(n,D))
+        xi = _sample_gaussian(mean, var, n, D)
         if bounds is not None:
             outofbounds = np.empty(len(xi), bool)
             while True:
@@ -33,8 +43,8 @@ def sample_clusters(amps, means, varis, N=100, D=2, bounds=None):
                     outofbounds |= np.logical_or(xi[:,d] < lo, xi[:,d] > hi)
                 if not np.any(outofbounds):
                     break
-                xi[outofbounds,:] = np.random.normal(
-                    loc=mean, scale=std, size=(np.sum(outofbounds),D))
+                xi[outofbounds,:] = _sample_gaussian(mean, var,
+                                                     np.sum(outofbounds), D)
             
         x.append(xi)
     # print [xi.shape for xi in x]
@@ -46,9 +56,33 @@ def get_clusters_A():
     '''
     amps  = [ 0.5, 0.25, 0.25 ]
     means = [ (3.5,2.5)  , (7.5,3.5), (4.5,6.5) ]
-    varis  = [ 1.,  0.7, 0.7   ]
+    varis  = [ 1.**2,  0.7**2, 0.7**2 ]
     ax = [0, 10, 0, 8.5]
     return (amps, means, varis), ax
+
+def get_clusters_C():
+    '''
+    Returns parameters of an example isotropic cluster, for K-means demo.
+    This one has 90% of the mass in one component and tends to mess up K-means.
+    '''
+    amps  = [ 0.9, 0.1 ]
+    means = [ (3.5, 4.), (6.5, 4.) ]
+    varis  = [ 0.8**2, 0.5**2 ]
+    ax = [0, 10, 0, 8]
+    return (amps, means, varis), ax
+
+def get_clusters_D():
+    '''
+    Returns parameters of a 2-D general Gaussian mixture model
+    '''
+    amps = [0.8, 0.2]
+    means = [ (3., 4.), (6.5, 4.) ]
+    covs = [ np.array([[1.,-0.5],[-0.5,1.]]),
+             np.array([[1.,0.5],[0.5,1.]]),
+             ]
+    ax = [0, 10, 0, 8]
+    return (amps,means,covs), ax
+
 
 def distance_matrix(A, B):
     '''
@@ -126,3 +160,65 @@ def plot_kmeans(i, X, K, centroids, newcentroids, nearest, show=True):
         plt.show()
 
         
+def gaussian_probability(X, mean, cov):
+    '''
+    Returns the probability of drawing data points from a Gaussian distribution
+
+    *X*: (N,D) array of data points
+    *mean*: (D,) vector: mean of the Gaussian
+    *cov*: (D,D) array: covariance of the Gaussian
+
+    Returns: (N,) vector of Gaussian probabilities
+    '''
+    D,d = cov.shape
+    assert(D == d)
+
+    # I haven't found a beautiful way of writing this in numpy...
+    mahal = np.sum(np.dot(np.linalg.inv(cov), (X - mean).T).T * (X - mean),
+                   axis=1)
+    return (1./((2.*np.pi)**(D/2.) * np.sqrt(np.linalg.det(cov)))
+            * np.exp(-0.5 * mahal))
+
+def plot_ellipse(mean, cov, *args, **kwargs):
+    import pylab as plt
+    u,s,v = np.linalg.svd(cov)
+    angle = np.linspace(0., 2.*np.pi, 200)
+    u1 = u[0,:]
+    u2 = u[1,:]
+    s1,s2 = np.sqrt(s)
+    xy = (u1[np.newaxis,:] * s1 * np.cos(angle)[:,np.newaxis] +
+          u2[np.newaxis,:] * s2 * np.sin(angle)[:,np.newaxis])
+    return plt.plot(mean[0] + xy[:,0], mean[1] + xy[:,1], *args, **kwargs)
+    
+    
+def plot_em(step, X, K, amps, means, covs, z,
+            newamps, newmeans, newcovs, show=True):
+    import pylab as plt
+    from matplotlib.colors import ColorConverter
+
+    (N,D) = X.shape
+
+    if z is None:
+        z = np.zeros((N,K))
+        for k,(amp,mean,cov) in enumerate(zip(amps, means, covs)):
+            z[:,k] = amp * gaussian_probability(X, mean, cov)
+        z /= np.sum(z, axis=1)[:,np.newaxis]
+    
+    plt.clf()
+    # snazzy color coding
+    cc = np.zeros((N,3))
+    CC = ColorConverter()
+    for k in range(K):
+        rgb = np.array(CC.to_rgb(colors[k]))
+        cc += z[:,k][:,np.newaxis] * rgb[np.newaxis,:]
+
+    plt.scatter(X[:,0], X[:,1], color=cc, s=9, alpha=0.5)
+
+    ax = plt.axis()
+    for k,(amp,mean,cov) in enumerate(zip(amps, means, covs)):
+        plot_ellipse(mean, cov, 'k-', lw=4)
+        plot_ellipse(mean, cov, 'k-', color=colors[k], lw=2)
+
+    plt.axis(ax)
+    if show:
+        plt.show()

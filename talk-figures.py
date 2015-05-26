@@ -78,26 +78,6 @@ def example3():
         #plt.axis('equal')
         plt.savefig('ex3%s.pdf' % plotname)
 
-def voronoi_plot_2d(vor, ax=None):
-    #ptp_bound = vor.points.ptp(axis=0)
-    ptp_bound = np.array([1000,1000])
-    
-    center = vor.points.mean(axis=0)
-    for pointidx, simplex in zip(vor.ridge_points, vor.ridge_vertices):
-        simplex = np.asarray(simplex)
-        if np.any(simplex < 0):
-            i = simplex[simplex >= 0][0]  # finite end Voronoi vertex
-
-            t = vor.points[pointidx[1]] - vor.points[pointidx[0]]  # tangent
-            t /= np.linalg.norm(t)
-            n = np.array([-t[1], t[0]])  # normal
-
-            midpoint = vor.points[pointidx].mean(axis=0)
-            direction = np.sign(np.dot(midpoint - center, n)) * n
-            far_point = vor.vertices[i] + direction * ptp_bound.max()
-
-            ax.plot([vor.vertices[i,0], far_point[0]],
-                    [vor.vertices[i,1], far_point[1]], 'k--')
 
 
 def kmeans(ps, seed=None, getcluster=get_clusters_A, K=3, N=200,
@@ -224,13 +204,6 @@ def kmeans_break1():
     # for i,xi in enumerate(X):
     #     plt.plot(xi[:,0], xi[:,1], '.', 
 
-def get_clusters_C():
-    means = [ (3.5, 4.), (6.5, 4.) ]
-    stds  = [ 0.8, 0.5  ]
-    amps  = [ 0.9, 0.1 ]
-    ax = [0, 10, 0, 8]
-    return (amps, means, stds), ax
-    
 def kmeans_break2():
     ps = PlotSequence('break2', suffix='png')
 
@@ -274,19 +247,6 @@ def sample_gmm(amps, means, covs, N=100, D=2, bounds=None):
     print [xi.shape for xi in x]
     return x
 
-def gaussian_probability(X, mean, cov):
-    D,d = cov.shape
-    #print 'X', X.shape
-    d1 = np.dot(np.linalg.inv(cov), (X - mean).T)
-    #print 'd1', d1.shape
-    mahal = np.sum(d1.T * (X - mean), axis=1)
-    #d2 = np.dot((X - mean).T, d1.T)
-    #print 'd2', d2.shape
-    #print 'mahal', mahal.shape
-    #mahal = np.dot((X - mean.T), np.dot(np.linalg.inv(cov), (X - mean).T).T)
-    return (1./((2.*np.pi)**(D/2.) * np.sqrt(np.linalg.det(cov)))
-            * np.exp(-0.5 * mahal))
-    
 def gmm1():
     amps = [0.8, 0.2]
     means = [ (3., 4.), (6.5, 4.) ]
