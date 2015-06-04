@@ -228,7 +228,7 @@ def plot_gmm_samples(X, K, params):
     nwalkers,ndim = params.shape
     plt.clf()
     plt.scatter(X[:,0], X[:,1], color='k', s=9, alpha=0.5)
-
+    N,D = X.shape
     for i in range(nwalkers):
         logamps,means,covs = unpack_gmm_params(params[i,:], K, D)
         amps = np.exp(np.append(1, logamps))
@@ -270,6 +270,31 @@ def pack_gmm_params(amps, means, covs):
         pp.append(covs[k,:,:].flat[I])
     return np.hstack(pp)
 
+def gaussian_probability_1d(x, mean, vari):
+    '''
+    Returns the probability of drawing data points from a Gaussian distribution
+
+    *X*: (N,) array of data points
+    *mean*: scalar: mean of the Gaussian
+    *vari*: scalar: variance of the Gaussian
+
+    Returns: (N,) vector of Gaussian probabilities
+    '''
+    # I haven't found a beautiful way of writing this in numpy...
+    mahal = (x - mean)**2 / vari
+    return (1./np.sqrt(2.*np.pi * vari)
+            * np.exp(-0.5 * mahal))
+
+def plot_sinusoid_samples(Xi, xf, params):
+    import pylab as plt
+    nwalkers,ndim = params.shape
+    plt.clf()
+    for i,X in enumerate(Xi):
+        plt.scatter(X[:,0], X[:,1], color=colors[i], s=9, alpha=0.5)
+    for i in range(nwalkers):
+        fg,offset,amp = params[i,:]
+        ypred = offset + amp * np.sin(xf)
+        plt.plot(xf, ypred, '-', color=colors[0], alpha=0.2)
 
 
 
