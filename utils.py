@@ -222,3 +222,68 @@ def plot_em(step, X, K, amps, means, covs, z,
     plt.axis(ax)
     if show:
         plt.show()
+
+def plot_gmm_samples(X, K, params):
+    import pylab as plt
+    nwalkers,ndim = params.shape
+    plt.clf()
+    plt.scatter(X[:,0], X[:,1], color='k', s=9, alpha=0.5)
+
+    for i in range(nwalkers):
+        logamps,means,covs = unpack_gmm_params(params[i,:], K, D)
+        amps = np.exp(np.append(1, logamps))
+        amps /= np.sum(amps)
+        for k,(amp,mean,cov) in enumerate(zip(amps, means, covs)):
+            plot_ellipse(mean, cov, '-', color=colors[k], lw=1, alpha=0.2)
+        
+def unpack_gmm_params(params, K, D):
+    amps   = params[:K-1]
+    params = params[K-1:]
+    means  = params[:K*D].reshape((K,D))
+    params = params[K*D:]
+    covs = np.zeros((K,D,D))
+    # we have to unpack the covariances carefully (triangular matrix)
+    tri = np.tri(D)
+    I = np.flatnonzero(tri)
+    for k in range(K):
+        covs[k,:,:].flat[I] = params[:len(I)]
+        params = params[len(I):]
+        # copy lower triangle to upper triangle
+        covs[k,:,:] += (covs[k,:,:].T * (1 - tri))
+    return amps, means, covs
+
+def pack_gmm_params(amps, means, covs):
+    K = len(amps)
+    k,D = means.shape
+    assert(k == K)
+    k,d1,d2 = covs.shape
+    assert(k == K)
+    assert(d1 == D)
+    assert(d2 == D)
+    pp = [amps[:-1], means.ravel()]
+    # grab the lower triangular matrix elements;
+    # 'tri' has ones in the lower diagonal
+    tri = np.tri(D)
+    # 'I' gives the flattened matrix elements in the lower diagonal
+    I = np.flatnonzero(tri)
+    for k in range(K):
+        pp.append(covs[k,:,:].flat[I])
+    return np.hstack(pp)
+
+
+
+
+if __name__ == '__main__':
+    a = np.array([1,2,3])
+    means = (1+np.arange(6)).reshape(3,2)
+    covs = (100 + np.arange(12)).reshape(3,2,2)
+    P = pack_gmm_params(a, means, covs)
+    print 'Packed params:', P
+
+    K = 3
+    D = 2
+    a2,m2,c2 = unpack_gmm_params(P, K, D)
+    print 'a2', a2
+    print 'm2', m2
+    print 'c2', c2
+    
