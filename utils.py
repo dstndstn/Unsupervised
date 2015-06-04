@@ -237,7 +237,14 @@ def plot_gmm_samples(X, K, params):
             plot_ellipse(mean, cov, '-', color=colors[k], lw=1, alpha=0.2)
         
 def unpack_gmm_params(params, K, D):
-    amps   = params[:K-1]
+    logamps   = params[:K-1]
+    # We're going to choose to work in log-amplitudes to avoid
+    # dealing with negative values.  (One could also avoid negative values by
+    # using a prior that values must be non-negative; in practice, do this by
+    # returning -np.inf in this function)
+    amps  = np.exp(np.append(0, logamps))
+    amps /= np.sum(amps)
+
     params = params[K-1:]
     means  = params[:K*D].reshape((K,D))
     params = params[K*D:]
@@ -253,6 +260,11 @@ def unpack_gmm_params(params, K, D):
     return amps, means, covs
 
 def pack_gmm_params(amps, means, covs):
+    '''
+    Pack Gaussian Mixture Model parameters into a flat array.
+
+    We will put log-amplitudes as the parameter space.
+    '''
     K = len(amps)
     k,D = means.shape
     assert(k == K)
@@ -260,7 +272,11 @@ def pack_gmm_params(amps, means, covs):
     assert(k == K)
     assert(d1 == D)
     assert(d2 == D)
-    pp = [amps[:-1], means.ravel()]
+
+    # Normalize relative to the first element (which had better not be 0!):
+    amps = amps / float(amps[0])
+    logamps = np.log(amps)
+    pp = [logamps[1:], means.ravel()]
     # grab the lower triangular matrix elements;
     # 'tri' has ones in the lower diagonal
     tri = np.tri(D)
@@ -299,7 +315,7 @@ def plot_sinusoid_samples(Xi, xf, params):
 
 
 if __name__ == '__main__':
-    a = np.array([1,2,3])
+    a = np.array([3,2,1])
     means = (1+np.arange(6)).reshape(3,2)
     covs = (100 + np.arange(12)).reshape(3,2,2)
     P = pack_gmm_params(a, means, covs)
